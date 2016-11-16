@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -1093,7 +1094,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
          if (logger.isDebugEnabled()) {
             logger.debug("Trying to connect with connector = " + connectorFactory +
                                                  ", parameters = " +
-                                                 connectorConfig.getParams() +
+                    replaceTrustStorePassword(connectorConfig.getParams()) +
                                                  " connector = " +
                                                  connector);
          }
@@ -1163,6 +1164,25 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
       }
 
       return transportConnection;
+   }
+
+
+   /**
+    * JBEAP-5833, it's bad to have trustore password in clear form in trace logs.
+    */
+   private String replaceTrustStorePassword(Map<String, Object> params) {
+      StringBuffer sb = new StringBuffer();
+      sb.append("{");
+      for(Map.Entry<String,Object> kv: params.entrySet()){
+         if(!kv.getKey().equals("trustStorePassword")){
+            sb.append(" ").append(kv.getKey()).append("=").append(kv.getValue()).append(",");
+         }
+      }
+      if(sb.toString().endsWith(",")){
+         sb.deleteCharAt(sb.length() - 1);
+      }
+      sb.append(" }");
+      return sb.toString();
    }
 
    private class DelegatingBufferHandler implements BufferHandler {
